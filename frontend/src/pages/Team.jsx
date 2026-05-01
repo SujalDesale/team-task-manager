@@ -227,71 +227,68 @@ export default function Team() {
 
         {/* MODAL */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
 
-            <div className="bg-white rounded-2xl w-[420px] p-5 relative shadow-lg">
+            <div className="bg-white w-[420px] rounded-2xl p-6 relative shadow-xl">
 
               {/* CLOSE */}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-gray-400"
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-700 text-lg"
               >
-                <X size={18} />
+                ✕
               </button>
 
-              <h2 className="text-lg font-semibold mb-4">
+              {/* TITLE */}
+              <h2 className="text-lg font-semibold mb-5">
                 Add team member
               </h2>
 
-              <div className="space-y-3">
+              {/* NAME */}
+              <label className="text-sm text-gray-600">Name</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-4 focus:ring-2 focus:ring-yellow-600 outline-none"
+              />
 
-                <input
-                  placeholder="Name"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm({ ...form, name: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
+              {/* EMAIL */}
+              <label className="text-sm text-gray-600">Email</label>
+              <input
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-4 focus:ring-2 focus:ring-yellow-600 outline-none"
+              />
 
-                <input
-                  placeholder="Email"
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm({ ...form, email: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
+              {/* PASSWORD */}
+              <label className="text-sm text-gray-600">Temporary password</label>
+              <input
+                type="password"
+                placeholder="At least 6 characters"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-4 focus:ring-2 focus:ring-yellow-600 outline-none"
+              />
 
-                <input
-                  type="password"
-                  placeholder="Temporary password"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
+              {/* ROLE */}
+              <label className="text-sm text-gray-600">Role</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-6 focus:ring-2 focus:ring-yellow-600 outline-none"
+              >
+                <option>Member</option>
+                <option>Admin</option>
+              </select>
 
-                <select
-                  value={form.role}
-                  onChange={(e) =>
-                    setForm({ ...form, role: e.target.value })
-                  }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option>Member</option>
-                  <option>Admin</option>
-                </select>
+              {/* BUTTON */}
+              <button
+                onClick={handleAdd}
+                className="w-full bg-yellow-700 hover:bg-yellow-800 text-white py-3 rounded-lg font-medium transition"
+              >
+                Add member
+              </button>
 
-                <button
-                  onClick={handleAdd}
-                  className="w-full bg-yellow-700 text-white py-2 rounded-lg text-sm mt-2"
-                >
-                  Add member
-                </button>
-
-              </div>
             </div>
           </div>
         )}
