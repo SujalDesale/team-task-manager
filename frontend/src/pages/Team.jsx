@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Plus, Trash2, X, Shield } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
 export default function Team() {
   const [showModal, setShowModal] = useState(false);
   const [members, setMembers] = useState([]);
@@ -18,7 +20,7 @@ export default function Team() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/users", {
+      const res = await fetch(`${API}/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,7 +60,7 @@ export default function Team() {
 
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/users", {
+      const res = await fetch(`${API}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +98,7 @@ export default function Team() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`http://localhost:5000/users/${id}`, {
+      await fetch(`${API}/users/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -115,7 +117,7 @@ export default function Team() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`http://localhost:5000/users/${id}`, {
+      await fetch(`${API}/users/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

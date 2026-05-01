@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { AlertTriangle, Clock, Bell } from "lucide-react";
 
-export default function Reminders() {
+const API = import.meta.env.VITE_API_URL;
 
+export default function Reminders() {
   const [overdueTasks, setOverdueTasks] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
 
-  // ================= FETCH TASKS =================
   useEffect(() => {
     fetchReminders();
   }, []);
@@ -16,11 +16,16 @@ export default function Reminders() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/tasks", {
+      const res = await fetch(`${API}/tasks`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (!res.ok) {
+        console.error("Fetch failed:", res.status);
+        return;
+      }
 
       const data = await res.json();
 
@@ -55,7 +60,7 @@ export default function Reminders() {
       setUpcomingTasks(upcoming);
 
     } catch (err) {
-      console.error(err);
+      console.error("Reminder error:", err);
     }
   };
 
@@ -91,7 +96,7 @@ export default function Reminders() {
             </div>
 
             {overdueTasks.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-200 bg-white rounded-xl p-6 text-center text-gray-400">
+              <div className="border-2 border-dashed bg-white rounded-xl p-6 text-center text-gray-400">
                 Nothing overdue. Great work!
               </div>
             ) : (
@@ -99,7 +104,7 @@ export default function Reminders() {
                 <div key={task._id} className="bg-white border rounded-xl p-4 mb-3">
                   <h3 className="font-semibold">{task.title}</h3>
                   <p className="text-sm text-gray-500">
-                    {task.assignee} • {task.projectId?.name || task.project}
+                    {task.assignee} • {task.projectId?.name || "No Project"}
                   </p>
                   <p className="text-xs text-red-500 mt-1">
                     Due: {task.date}
@@ -121,7 +126,7 @@ export default function Reminders() {
             </div>
 
             {upcomingTasks.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-200 bg-white rounded-xl p-6 text-center text-gray-400">
+              <div className="border-2 border-dashed bg-white rounded-xl p-6 text-center text-gray-400">
                 No tasks due soon.
               </div>
             ) : (
@@ -137,23 +142,17 @@ export default function Reminders() {
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {task.title}
-                      </h3>
+                      <h3 className="font-semibold">{task.title}</h3>
                       <p className="text-sm text-gray-500">
-                        {task.assignee} • {task.projectId?.name || task.project}
+                        {task.assignee} • {task.projectId?.name || "No Project"}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-xs tracking-widest text-gray-400">
-                        DUE
-                      </p>
-                      <p className="text-sm font-semibold">
-                        {task.date}
-                      </p>
+                      <p className="text-xs text-gray-400">DUE</p>
+                      <p className="text-sm font-semibold">{task.date}</p>
                     </div>
                   </div>
 
@@ -161,16 +160,13 @@ export default function Reminders() {
               ))
             )}
           </div>
-
         </div>
 
-        {/* EMPTY STATE */}
+        {/* EMPTY */}
         {overdueTasks.length === 0 && upcomingTasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center mt-20 text-gray-400">
+          <div className="flex flex-col items-center mt-20 text-gray-400">
             <Bell size={40} className="mb-3 opacity-60" />
-            <p className="text-sm">
-              All caught up. We'll let you know when something needs attention.
-            </p>
+            <p>All caught up!</p>
           </div>
         )}
 

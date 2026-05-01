@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import { Plus, Trash2, Activity } from "lucide-react";
 
+const API = import.meta.env.VITE_API_URL;
+
 export default function Tasks() {
 
   const [showModal, setShowModal] = useState(false);
@@ -29,37 +31,42 @@ export default function Tasks() {
   // ================= FETCH =================
 
   const fetchProjects = async () => {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch("http://localhost:5000/projects", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await res.json();
-    setProjects(data);
-  };
-
-  const fetchTasks = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/tasks", {
+      const res = await fetch(`${API}/projects`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       const data = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
 
-      if (!Array.isArray(data)) {
-        console.error("Invalid response:", data);
+    } catch (err) {
+      console.error("Projects error:", err);
+      setProjects([]);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API}/tasks`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Tasks fetch failed:", res.status);
         setTasks([]);
         return;
       }
 
-      setTasks(data);
+      const data = await res.json();
+      setTasks(Array.isArray(data) ? data : []);
 
     } catch (err) {
       console.error(err);
@@ -68,14 +75,22 @@ export default function Tasks() {
   };
 
   const fetchUsers = async () => {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:5000/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const res = await fetch(`${API}/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data = await res.json();
-    setMembers(data);
+      const data = await res.json();
+      setMembers(Array.isArray(data) ? data : []);
+
+    } catch (err) {
+      console.error("Users error:", err);
+      setMembers([]);
+    }
   };
 
   useEffect(() => {
@@ -89,7 +104,7 @@ export default function Tasks() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch("http://localhost:5000/tasks", {
+      const res = await fetch(`${API}/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +142,7 @@ export default function Tasks() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`http://localhost:5000/tasks/${selectedTask._id}`, {
+      await fetch(`${API}/tasks/${selectedTask._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -150,7 +165,7 @@ export default function Tasks() {
     try {
       const token = localStorage.getItem("token");
 
-      await fetch(`http://localhost:5000/tasks/${selectedTask._id}`, {
+      await fetch(`${API}/tasks/${selectedTask._id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
