@@ -13,15 +13,21 @@ import Task from "./models/Task.js";
 
 const app = express();
 
+// app.use(cors({
+//   origin: [
+//     "http://localhost:5173",
+//     /vercel\.app$/
+//   ],
+//   credentials: true
+// }));
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    /vercel\.app$/
-  ],
-  credentials: true
+  origin: "*",   // TEMP 
 }));
 
-const JWT_SECRET = process.env.JWT_SECRET;
+app.use(express.json());
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret123";
 
 // ================= DB =================
 mongoose.connect(process.env.MONGO_URI)
@@ -54,7 +60,13 @@ const auth = (req, res, next) => {
 // REGISTER
 app.post("/register", async (req, res) => {
   try {
+    console.log("REGISTER BODY:", req.body);
+
     const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ msg: "Missing fields" });
+    }
 
     const exist = await User.findOne({ email });
     if (exist) return res.json({ msg: "User exists" });
@@ -66,7 +78,8 @@ app.post("/register", async (req, res) => {
     res.json({ msg: "Registered successfully" });
 
   } catch (err) {
-    res.status(500).json({ msg: "Server error" });
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
   }
 });
 
@@ -74,6 +87,8 @@ app.post("/register", async (req, res) => {
 // LOGIN
 app.post("/login", async (req, res) => {
   try {
+    console.log("LOGIN BODY:", req.body);
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -93,7 +108,8 @@ app.post("/login", async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ msg: "Server error" });
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
   }
 });
 
