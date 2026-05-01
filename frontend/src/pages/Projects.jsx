@@ -175,44 +175,73 @@ export default function Projects() {
 
         {/* MODAL */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white w-[400px] rounded-xl p-6 relative shadow-lg">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
 
+            <div className="bg-white w-[420px] rounded-2xl p-6 relative shadow-xl">
+
+              {/* CLOSE */}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute right-4 top-4 text-gray-500"
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-700 text-lg"
               >
                 ✕
               </button>
 
+              {/* TITLE */}
               <h2 className="text-lg font-semibold mb-4">
                 Create new project
               </h2>
 
+              {/* NAME */}
+              <label className="text-sm text-gray-600">Name</label>
               <input
-                className="w-full border rounded-lg p-2 mb-3"
-                placeholder="Project name"
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-4 focus:ring-2 focus:ring-yellow-600 outline-none"
+                placeholder="e.g. Q2 Marketing Campaign"
                 value={form.name}
                 onChange={(e) =>
                   setForm({ ...form, name: e.target.value })
                 }
               />
 
+              {/* DESCRIPTION */}
+              <label className="text-sm text-gray-600">Description</label>
               <textarea
-                className="w-full border rounded-lg p-2 mb-4"
-                placeholder="Description"
+                className="w-full border border-gray-300 rounded-lg p-3 mt-1 mb-4 focus:ring-2 focus:ring-yellow-600 outline-none"
+                placeholder="Short summary..."
                 value={form.description}
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
               />
 
+              {/* COLORS */}
+              <label className="text-sm text-gray-600">Color</label>
+              <div className="flex gap-3 mt-2 mb-6">
+                {[
+                  "bg-yellow-600",
+                  "bg-yellow-400",
+                  "bg-green-500",
+                  "bg-orange-500",
+                  "bg-red-500",
+                  "bg-purple-500",
+                ].map((color) => (
+                  <div
+                    key={color}
+                    onClick={() => setForm({ ...form, color })}
+                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${form.color === color ? "border-black" : "border-transparent"
+                      } ${color}`}
+                  ></div>
+                ))}
+              </div>
+
+              {/* BUTTON */}
               <button
                 onClick={handleCreate}
-                className="w-full bg-yellow-700 text-white py-2 rounded-lg"
+                className="w-full bg-yellow-700 hover:bg-yellow-800 text-white py-3 rounded-lg font-medium transition"
               >
-                Create
+                Create project
               </button>
+
             </div>
           </div>
         )}
