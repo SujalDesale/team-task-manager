@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Folder,
@@ -10,6 +10,10 @@ import {
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // ✅ GET USER FROM LOCAL STORAGE
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const menu = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -19,12 +23,19 @@ export default function Sidebar() {
     { name: "Team", path: "/team", icon: Users },
   ];
 
+  // ✅ LOGOUT FUNCTION
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+
   return (
     <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col justify-between">
 
       {/* TOP */}
       <div className="px-5 py-6">
-        
+
         {/* LOGO */}
         <div className="flex items-center gap-2 mb-8">
           <div className="w-8 h-8 bg-yellow-600 text-white flex items-center justify-center rounded-md">
@@ -65,16 +76,23 @@ export default function Sidebar() {
       <div className="px-5 py-4 border-t border-gray-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-yellow-500 text-white w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold">
-            A
+            {user?.name?.charAt(0)?.toUpperCase() || "U"}
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-gray-800">Admin</p>
-            <p className="text-xs text-gray-500">Admin</p>
+            <p className="text-sm font-semibold text-gray-800">
+              {user?.name || "User"}
+            </p>
+            <p className="text-xs text-gray-500">
+              {user?.email || ""}
+            </p>
           </div>
         </div>
 
-        <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-100 transition">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-100 transition"
+        >
           <LogOut size={16} />
           Sign out
         </button>

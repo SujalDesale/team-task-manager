@@ -1,83 +1,184 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import { Plus, Trash2, Activity } from "lucide-react";
 
 export default function Tasks() {
+
   const [showModal, setShowModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [selectedProject, setSelectedProject] = useState("");
 
-  const [tasks, setTasks] = useState([
-    {
-      title: "Frontend",
-      description: "Complete Frontend of the website",
-      status: "Pending",
-      priority: "High",
-      assignee: "Demo Member",
-      date: "2026-05-01",
-      project: "Building website",
-    },
-  ]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const [form, setForm] = useState({
     title: "",
     description: "",
     project: "No project",
-    assignee: "Unassigned",
+    assignee: "",
     priority: "Medium",
     status: "Pending",
     date: "",
   });
 
-  const addTask = () => {
-    setTasks([...tasks, form]);
-    setShowModal(false);
-    setForm({
-      title: "",
-      description: "",
-      project: "No project",
-      assignee: "Unassigned",
-      priority: "Medium",
-      status: "Pending",
-      date: "",
+  const inputStyle =
+    "w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-1 focus:ring-yellow-600";
+
+  // ================= FETCH =================
+
+  const fetchProjects = async () => {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("http://localhost:5000/projects", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+
+    const data = await res.json();
+    setProjects(data);
   };
 
-  const updateTask = (field, value) => {
-    setSelectedTask({ ...selectedTask, [field]: value });
+  const fetchTasks = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    setTasks(
-      tasks.map((t) =>
-        t === selectedTask ? { ...selectedTask, [field]: value } : t
-      )
-    );
+      const res = await fetch("http://localhost:5000/tasks", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        console.error("Invalid response:", data);
+        setTasks([]);
+        return;
+      }
+
+      setTasks(data);
+
+    } catch (err) {
+      console.error(err);
+      setTasks([]);
+    }
   };
 
-  const deleteTask = () => {
-    setTasks(tasks.filter((t) => t !== selectedTask));
-    setSelectedTask(null);
+  const fetchUsers = async () => {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("http://localhost:5000/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    setMembers(data);
   };
+
+  useEffect(() => {
+    fetchTasks();
+    fetchProjects();
+    fetchUsers();
+  }, []);
+
+  // ================= CREATE =================
+  const addTask = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch("http://localhost:5000/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...form,
+          projectId: selectedProject,
+        }),
+      });
+
+      setShowModal(false);
+      fetchTasks();
+
+      setForm({
+        title: "",
+        description: "",
+        project: "No project",
+        assignee: "",
+        priority: "Medium",
+        status: "Pending",
+        date: "",
+      });
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ================= UPDATE =================
+  const updateTask = async (field, value) => {
+    const updated = { ...selectedTask, [field]: value };
+    setSelectedTask(updated);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(`http://localhost:5000/tasks/${selectedTask._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updated),
+      });
+
+      fetchTasks();
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ================= DELETE =================
+  const deleteTask = async () => {
+    if (!window.confirm("Delete this task?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(`http://localhost:5000/tasks/${selectedTask._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setSelectedTask(null);
+      fetchTasks();
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
 
   const filterTasks = (status) =>
     tasks.filter((t) => t.status === status);
 
-  const inputStyle =
-    "w-full border rounded-lg p-2 outline-none focus:ring-1 focus:ring-yellow-600";
-
   return (
     <div className="flex bg-[#f8f9fb] min-h-screen font-serif">
-
-      {/* SIDEBAR */}
       <Sidebar />
 
-      {/* MAIN CONTENT */}
       <div className="flex-1 px-8 py-6">
 
         {/* HEADER */}
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">
-              Tasks
-            </h1>
+            <h1 className="text-2xl font-semibold text-gray-800">Tasks</h1>
             <p className="text-gray-500 text-sm mt-1">
               Track progress across your team
             </p>
@@ -85,140 +186,219 @@ export default function Tasks() {
 
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-yellow-700 text-white px-4 py-2 rounded-lg hover:bg-yellow-800 transition"
+            className="flex items-center gap-2 bg-yellow-700 text-white px-4 py-2 rounded-lg"
           >
-            <Plus size={16} />
-            New Task
+            <Plus size={16} /> New Task
           </button>
         </div>
 
-        {/* LINE */}
-        <div className="border-b border-gray-200 mb-6"></div>
+        <div className="border-b mb-6"></div>
 
         {/* BOARD */}
         <div className="grid grid-cols-3 gap-6">
-
           {["Pending", "In progress", "Completed"].map((status) => (
             <div key={status}>
-
-              <h2 className="text-xs tracking-widest text-gray-400 mb-3">
+              <h2 className="text-xs text-gray-400 mb-3">
                 {status.toUpperCase()} ({filterTasks(status).length})
               </h2>
 
               <div className="space-y-4">
-                {filterTasks(status).length === 0 ? (
-                  <div className="border-2 border-dashed p-6 text-center text-gray-400 rounded-xl bg-white">
-                    No tasks
-                  </div>
-                ) : (
-                  filterTasks(status).map((task, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setSelectedTask(task)}
-                      className="bg-white p-4 rounded-xl border shadow-sm cursor-pointer"
-                    >
-                      <span className="text-xs bg-red-100 text-red-500 px-2 py-1 rounded">
-                        {task.priority}
-                      </span>
+                {filterTasks(status).map((task, i) => (
+                  <div
+                    key={task._id}
+                    onClick={() => setSelectedTask(task)}
+                    className="bg-white p-4 rounded-xl border cursor-pointer"
+                  >
+                    <span className="text-xs bg-red-100 text-red-500 px-2 py-1 rounded">
+                      {task.priority}
+                    </span>
 
-                      <h3 className="font-semibold mt-2 text-gray-800">
-                        {task.title}
-                      </h3>
+                    <h3 className="font-semibold mt-2">{task.title}</h3>
 
-                      <p className="text-sm text-gray-500">
-                        {task.description}
-                      </p>
+                    <p className="text-sm text-gray-500">
+                      {task.description}
+                    </p>
 
-                      <div className="flex justify-between text-xs text-gray-400 mt-4 border-t pt-2">
-                        <span>{task.assignee}</span>
-                        <span>{task.date}</span>
-                      </div>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      {task.projectId?.name || "No Project"}
+                    </p>
 
-                      <p className="text-xs text-yellow-700 mt-2">
-                        • {task.project}
-                      </p>
+                    <div className="flex justify-between text-xs mt-3">
+                      <span>{task.assignee}</span>
+                      <span>{task.date}</span>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
+
       </div>
 
       {/* ================= CREATE TASK ================= */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white w-[650px] rounded-2xl p-7 shadow-xl relative">
 
-          <div className="bg-white w-[520px] rounded-xl p-6 shadow-lg relative">
-
+            {/* CLOSE */}
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4"
+              className="absolute top-4 right-4 border rounded-full w-8 h-8 flex items-center justify-center text-yellow-700 hover:bg-yellow-50"
             >
               ✕
             </button>
 
-            <h2 className="text-lg font-semibold mb-4">Create task</h2>
+            {/* TITLE */}
+            <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+              Create task
+            </h2>
 
-            <input
-              placeholder="What needs to be done?"
-              className={inputStyle}
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-
-            <textarea
-              placeholder="Description"
-              className={`${inputStyle} mt-3 h-24`}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <select className={inputStyle}>
-                <option>No project</option>
-              </select>
-
-              <select className={inputStyle}>
-                <option>Unassigned</option>
-                <option>Demo Member</option>
-              </select>
-
-              <select className={inputStyle}>
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-
-              <select className={inputStyle}>
-                <option>Pending</option>
-                <option>In progress</option>
-                <option>Completed</option>
-              </select>
+            {/* TITLE INPUT */}
+            <div className="mb-5">
+              <p className="text-xs tracking-widest text-gray-400 mb-1">
+                TITLE
+              </p>
+              <input
+                placeholder="What needs to be done?"
+                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600 outline-none"
+                value={form.title}
+                onChange={(e) =>
+                  setForm({ ...form, title: e.target.value })
+                }
+              />
             </div>
 
-            <input type="date" className={`${inputStyle} mt-4`} />
+            {/* DESCRIPTION */}
+            <div className="mb-5">
+              <p className="text-xs tracking-widest text-gray-400 mb-1">
+                DESCRIPTION
+              </p>
+              <textarea
+                className="w-full border border-gray-300 rounded-lg p-2 h-24 focus:ring-1 focus:ring-yellow-600 outline-none"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
 
-            <button
-              onClick={addTask}
-              className="w-full mt-4 bg-yellow-700 text-white py-2 rounded-lg hover:bg-yellow-800 transition"
-            >
-              Create task
-            </button>
+            {/* PROJECT + ASSIGNEE */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              <div>
+                <p className="text-xs tracking-widest text-gray-400 mb-1">
+                  PROJECT
+                </p>
+                <select
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600"
+                  value={selectedProject}
+                  onChange={(e) =>
+                    setSelectedProject(e.target.value)}
+                >
+                  <option value="">Select Project</option>
+                  {projects.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <p className="text-xs tracking-widest text-gray-400 mb-1">
+                  ASSIGNEE
+                </p>
+                <select
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600"
+                  value={form.assignee}
+                  onChange={(e) =>
+                    setForm({ ...form, assignee: e.target.value })
+                  }
+                >
+                  <option value="">Select member</option>
+                  {members.map((m) => (
+                    <option key={m._id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* PRIORITY + STATUS */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              <div>
+                <p className="text-xs tracking-widest text-gray-400 mb-1">
+                  PRIORITY
+                </p>
+                <select
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600"
+                  value={form.priority}
+                  onChange={(e) =>
+                    setForm({ ...form, priority: e.target.value })
+                  }
+                >
+                  <option>Low</option>
+                  <option>Medium</option>
+                  <option>High</option>
+                </select>
+              </div>
+
+              <div>
+                <p className="text-xs tracking-widest text-gray-400 mb-1">
+                  STATUS
+                </p>
+                <select
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600"
+                  value={form.status}
+                  onChange={(e) =>
+                    setForm({ ...form, status: e.target.value })
+                  }
+                >
+                  <option>Pending</option>
+                  <option>In progress</option>
+                  <option>Completed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* DATE */}
+            <div className="mb-6">
+              <p className="text-xs tracking-widest text-gray-400 mb-1">
+                DUE DATE
+              </p>
+              <input
+                type="date"
+                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-1 focus:ring-yellow-600"
+                value={form.date}
+                onChange={(e) =>
+                  setForm({ ...form, date: e.target.value })
+                }
+              />
+            </div>
+
+            {/* BUTTON */}
+            <div className="flex justify-end">
+              <button
+                onClick={addTask}
+                className="bg-yellow-700 text-white px-6 py-2 rounded-lg hover:bg-yellow-800 transition"
+              >
+                Create task
+              </button>
+            </div>
+
           </div>
         </div>
       )}
-
       {/* ================= TASK DETAILS ================= */}
       {selectedTask && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
 
-          <div className="bg-white w-[650px] rounded-xl p-6 shadow-lg relative">
+          <div className="bg-white w-[750px] rounded-2xl p-6 shadow-xl relative">
 
             <button
               onClick={() => setSelectedTask(null)}
-              className="absolute top-4 right-4 border rounded-full w-7 h-7 flex items-center justify-center text-yellow-700"
+              className="absolute top-4 right-4 border rounded-full w-8 h-8 flex items-center justify-center text-yellow-700"
             >
               ✕
             </button>
@@ -227,17 +407,20 @@ export default function Tasks() {
               {selectedTask.title}
             </h2>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-8">
 
-              {/* LEFT */}
+              {/* LEFT SIDE */}
               <div>
+
                 <p className="text-xs tracking-widest text-gray-400 mb-2">
                   DESCRIPTION
                 </p>
 
                 <textarea
                   value={selectedTask.description}
-                  onChange={(e) => updateTask("description", e.target.value)}
+                  onChange={(e) =>
+                    updateTask("description", e.target.value)
+                  }
                   className={`${inputStyle} h-28`}
                 />
 
@@ -245,7 +428,7 @@ export default function Tasks() {
                   COMMENTS (0)
                 </p>
 
-                <p className="text-sm text-gray-400 mb-2">
+                <p className="text-sm text-gray-400 mb-3">
                   No comments yet
                 </p>
 
@@ -260,16 +443,19 @@ export default function Tasks() {
                 </div>
               </div>
 
-              {/* RIGHT */}
-              <div className="space-y-4">
+              {/* RIGHT SIDE */}
+              <div className="space-y-5">
 
+                {/* STATUS */}
                 <div>
                   <p className="text-xs tracking-widest text-gray-400 mb-1">
                     STATUS
                   </p>
                   <select
                     value={selectedTask.status}
-                    onChange={(e) => updateTask("status", e.target.value)}
+                    onChange={(e) =>
+                      updateTask("status", e.target.value)
+                    }
                     className={inputStyle}
                   >
                     <option>Pending</option>
@@ -278,18 +464,21 @@ export default function Tasks() {
                   </select>
                 </div>
 
+                {/* PRIORITY */}
                 <div>
                   <p className="text-xs tracking-widest text-gray-400 mb-1">
                     PRIORITY
                   </p>
 
-                  <span className="text-xs bg-red-100 text-red-500 px-2 py-1 rounded">
+                  <span className="text-xs bg-red-100 text-red-500 px-2 py-1 rounded mb-1 inline-block">
                     {selectedTask.priority}
                   </span>
 
                   <select
                     value={selectedTask.priority}
-                    onChange={(e) => updateTask("priority", e.target.value)}
+                    onChange={(e) =>
+                      updateTask("priority", e.target.value)
+                    }
                     className={`${inputStyle} mt-1`}
                   >
                     <option>Low</option>
@@ -298,19 +487,25 @@ export default function Tasks() {
                   </select>
                 </div>
 
+                {/* ASSIGNEE */}
                 <div>
                   <p className="text-xs tracking-widest text-gray-400 mb-1">
                     ASSIGNEE
                   </p>
                   <select
                     value={selectedTask.assignee}
-                    onChange={(e) => updateTask("assignee", e.target.value)}
+                    onChange={(e) =>
+                      updateTask("assignee", e.target.value)
+                    }
                     className={inputStyle}
                   >
-                    <option>Demo Member</option>
+                    {members.map((m) => (
+                      <option key={m._id}>{m.name}</option>
+                    ))}
                   </select>
                 </div>
 
+                {/* DATE */}
                 <div>
                   <p className="text-xs tracking-widest text-gray-400 mb-1">
                     DUE DATE
@@ -318,27 +513,36 @@ export default function Tasks() {
                   <input
                     type="date"
                     value={selectedTask.date}
-                    onChange={(e) => updateTask("date", e.target.value)}
+                    onChange={(e) =>
+                      updateTask("date", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </div>
 
+                {/* ACTIVITY */}
                 <div>
                   <p className="text-xs tracking-widest text-gray-400 mb-2 flex items-center gap-2">
                     <Activity size={14} />
                     ACTIVITY
                   </p>
-
-                  <p className="text-sm text-gray-500">
-                    <span className="text-yellow-600 mr-2">•</span>
-                    Admin created — created this task
-                  </p>
-
-                  <p className="text-xs text-gray-400 ml-4">
-                    4/30/2026, 8:30 PM
-                  </p>
+                  {selectedTask.activity?.length === 0 ? (
+                    <p className="text-sm text-gray-400">No activity yet</p>
+                  ) : (
+                    selectedTask.activity.map((act, i) => (
+                      <div key={i} className="mb-2">
+                        <p className="text-sm text-gray-600">
+                          • {act.user} {act.action}
+                        </p>
+                        <p className="text-xs text-gray-400 ml-3">
+                          {new Date(act.time).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
+                {/* DELETE */}
                 <button
                   onClick={deleteTask}
                   className="w-full border border-red-300 text-red-500 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-red-50"
@@ -346,11 +550,13 @@ export default function Tasks() {
                   <Trash2 size={16} />
                   Delete task
                 </button>
+
               </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

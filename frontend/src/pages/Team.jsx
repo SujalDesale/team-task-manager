@@ -1,20 +1,138 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { Plus, Trash2, X, Shield } from "lucide-react";
 
 export default function Team() {
   const [showModal, setShowModal] = useState(false);
+  const [members, setMembers] = useState([]);
 
-  const members = [
-    { name: "L", email: "lock_052d40@example.com", role: "Member" },
-    { name: "T User", email: "test_e9a33c65@example.com", role: "Member" },
-    { name: "Demo Member", email: "member@taskflow.com", role: "Member" },
-    { name: "Admin", email: "admin@taskflow.com", role: "Admin" },
-  ];
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "Member",
+  });
+
+  // ================= FETCH USERS =================
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Failed to fetch users");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setMembers(data);
+      } else {
+        console.error("Invalid data:", data);
+        setMembers([]);
+      }
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // ================= ADD MEMBER =================
+  const handleAdd = async () => {
+    try {
+      // ✅ VALIDATION
+      if (!form.name || !form.email || !form.password) {
+        alert("All fields required");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (data._id) {
+        // ✅ SUCCESS
+        fetchUsers();
+        setShowModal(false);
+
+        // ✅ RESET FORM
+        setForm({
+          name: "",
+          email: "",
+          password: "",
+          role: "Member",
+        });
+
+      } else {
+        alert(data.msg || "Failed to add member");
+      }
+
+    } catch (err) {
+      console.error("Add error:", err);
+    }
+  };
+
+  // ================= DELETE =================
+  const handleDelete = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(`http://localhost:5000/users/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      fetchUsers();
+
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
+  };
+
+  // ================= UPDATE ROLE =================
+  const handleRoleChange = async (id, role) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await fetch(`http://localhost:5000/users/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role }),
+      });
+
+      fetchUsers();
+
+    } catch (err) {
+      console.error("Role update error:", err);
+    }
+  };
 
   return (
     <div className="flex bg-[#f8f9fb] min-h-screen font-serif">
-
       <Sidebar />
 
       <div className="flex-1 px-8 py-6">
@@ -39,22 +157,23 @@ export default function Team() {
           </button>
         </div>
 
-        {/* LINE */}
         <div className="border-b border-gray-200 mb-6"></div>
 
         {/* MEMBER LIST */}
-        <div>
-          <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-
-            {members.map((m, i) => (
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          {members.length === 0 ? (
+            <p className="p-6 text-gray-400 text-sm">
+              No team members yet
+            </p>
+          ) : (
+            members.map((m) => (
               <div
-                key={i}
+                key={m._id}
                 className="flex items-center justify-between px-6 py-4 border-b last:border-b-0"
               >
-                {/* LEFT */}
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-semibold">
-                    {m.name.charAt(0)}
+                    {m.name?.charAt(0)}
                   </div>
 
                   <div>
@@ -77,34 +196,43 @@ export default function Team() {
                   </div>
                 </div>
 
-                {/* RIGHT */}
                 <div className="flex items-center gap-3">
                   {m.role !== "Admin" && (
                     <>
-                      <select className="border rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500">
+                      <select
+                        value={m.role}
+                        onChange={(e) =>
+                          handleRoleChange(m._id, e.target.value)
+                        }
+                        className="border rounded-md px-3 py-1 text-sm"
+                      >
                         <option>Member</option>
                         <option>Admin</option>
                       </select>
 
-                      <Trash2 size={16} className="text-gray-400 cursor-pointer" />
+                      <Trash2
+                        size={16}
+                        onClick={() => handleDelete(m._id)}
+                        className="text-gray-400 cursor-pointer"
+                      />
                     </>
                   )}
                 </div>
               </div>
-            ))}
-
-          </div>
+            ))
+          )}
         </div>
 
         {/* MODAL */}
         {showModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
-            <div className="bg-white rounded-xl w-[420px] p-6 relative">
+            <div className="bg-white rounded-2xl w-[420px] p-5 relative shadow-lg">
 
+              {/* CLOSE */}
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-gray-500"
+                className="absolute top-4 right-4 text-gray-400"
               >
                 <X size={18} />
               </button>
@@ -113,48 +241,58 @@ export default function Team() {
                 Add team member
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
 
-                <div>
-                  <label className="text-sm text-gray-600">Name</label>
-                  <input className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
-                </div>
+                <input
+                  placeholder="Name"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm({ ...form, name: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
 
-                <div>
-                  <label className="text-sm text-gray-600">Email</label>
-                  <input className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-1 focus:ring-yellow-500" />
-                </div>
+                <input
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm({ ...form, email: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
 
-                <div>
-                  <label className="text-sm text-gray-600">
-                    Temporary password
-                  </label>
-                  <input
-                    placeholder="At least 6 characters"
-                    className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                  />
-                </div>
+                <input
+                  type="password"
+                  placeholder="Temporary password"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
 
-                <div>
-                  <label className="text-sm text-gray-600">Role</label>
-                  <select className="w-full border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-1 focus:ring-yellow-500">
-                    <option>Member</option>
-                    <option>Admin</option>
-                  </select>
-                </div>
+                <select
+                  value={form.role}
+                  onChange={(e) =>
+                    setForm({ ...form, role: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option>Member</option>
+                  <option>Admin</option>
+                </select>
 
-                <div className="flex justify-end pt-2">
-                  <button className="bg-yellow-700 text-white px-4 py-2 rounded-lg">
-                    Add member
-                  </button>
-                </div>
+                <button
+                  onClick={handleAdd}
+                  className="w-full bg-yellow-700 text-white py-2 rounded-lg text-sm mt-2"
+                >
+                  Add member
+                </button>
 
               </div>
-
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

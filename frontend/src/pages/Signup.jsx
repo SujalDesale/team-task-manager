@@ -8,13 +8,29 @@ export default function Signup() {
 
   const navigate = useNavigate();
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
-    // TEMP SIGNUP
-    if (name && email && password) {
-      localStorage.setItem("user", JSON.stringify({ name, email }));
-      navigate("/dashboard");
+    try {
+      const res = await fetch("http://localhost:5000/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.msg === "Registered successfully") {
+        alert("Account created! Please login.");
+        navigate("/");
+      } else {
+        alert(data.msg || "Signup failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
   };
 
@@ -26,9 +42,7 @@ export default function Signup() {
         className="bg-white p-8 rounded-xl shadow-md w-[400px]"
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-yellow-700 text-white p-2 rounded-full">
-            ✓
-          </div>
+          <div className="bg-yellow-700 text-white p-2 rounded-full">✓</div>
           <h2 className="text-xl font-bold">TaskFlow</h2>
         </div>
 
@@ -42,18 +56,21 @@ export default function Signup() {
           Start collaborating with your team in minutes.
         </p>
 
+        {/* NAME */}
         <input
           className="w-full border rounded-lg p-3 mb-4"
           placeholder="Full name"
           onChange={(e) => setName(e.target.value)}
         />
 
+        {/* EMAIL */}
         <input
           className="w-full border rounded-lg p-3 mb-4"
           placeholder="Email"
           onChange={(e) => setEmail(e.target.value)}
         />
 
+        {/* PASSWORD */}
         <input
           className="w-full border rounded-lg p-3 mb-6"
           type="password"

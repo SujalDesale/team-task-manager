@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import { Plus, Folder } from "lucide-react";
 
@@ -12,20 +12,66 @@ export default function Projects() {
     color: "bg-yellow-500",
   });
 
-  const handleCreate = () => {
+  const user = JSON.parse(localStorage.getItem("user"));
+
+
+  // ================= FETCH PROJECTS =================
+  const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/projects", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        console.error("Invalid response:", data);
+        setProjects([]);
+        return;
+      }
+
+      setProjects(data);
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setProjects([]);
+    }
+  };
+
+  // ================= LOAD ON START =================
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // ================= CREATE PROJECT =================
+  const handleCreate = async () => {
     if (!form.name) return;
 
-    setProjects([
-      ...projects,
-      {
-        ...form,
-        tasks: 1,
-        owner: "Admin",
-      },
-    ]);
+    try {
+      const token = localStorage.getItem("token");
 
-    setShowModal(false);
-    setForm({ name: "", description: "", color: "bg-yellow-500" });
+      await fetch("http://localhost:5000/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+
+      // refresh list
+      fetchProjects();
+
+      setShowModal(false);
+      setForm({ name: "", description: "", color: "bg-yellow-500" });
+
+    } catch (err) {
+      console.error("Create error:", err);
+    }
   };
 
   return (
@@ -68,9 +114,9 @@ export default function Projects() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-6">
-            {projects.map((p, i) => (
+            {projects.map((p) => (
               <div
-                key={i}
+                key={p._id}
                 className="bg-white p-5 rounded-xl border shadow-sm"
               >
                 <div
@@ -88,8 +134,8 @@ export default function Projects() {
                 </p>
 
                 <div className="flex justify-between text-xs text-gray-400 border-t pt-3">
-                  <span>{p.tasks} tasks</span>
-                  <span>by {p.owner}</span>
+                  <span>{p.taskCount || 0} tasks</span>
+                  <span>by {user?.name || "you"}</span>
                 </div>
               </div>
             ))}
@@ -149,9 +195,8 @@ export default function Projects() {
                   <div
                     key={c}
                     onClick={() => setForm({ ...form, color: c })}
-                    className={`w-8 h-8 rounded-full cursor-pointer ${c} border ${
-                      form.color === c ? "border-black" : "border-transparent"
-                    }`}
+                    className={`w-8 h-8 rounded-full cursor-pointer ${c} border ${form.color === c ? "border-black" : "border-transparent"
+                      }`}
                   />
                 ))}
               </div>
