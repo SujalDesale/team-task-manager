@@ -10,7 +10,13 @@ import Task from "./models/Task.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://team-task-manager-3.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 const JWT_SECRET = "secret123";
