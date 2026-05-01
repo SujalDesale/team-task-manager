@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RESET */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Times New Roman", Times, serif;
+}
+
+/* REMOVE CENTER BOX ISSUE */
+#root {
+  display: block;
+}
+
+/* OPTIONAL CLEAN BASE */
+body {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background-color: #fff;
+}
