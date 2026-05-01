@@ -52,13 +52,6 @@ cd backend
 npm install
 ```
 
-Create `.env`:
-
-```
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=secret123
-```
-
 Run:
 
 ```bash
