@@ -7,11 +7,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  const API = import.meta.env.VITE_API_URL;
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/login", {
+      const res = await fetch(`${API}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -19,29 +21,28 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      // ✅ handle invalid responses
+      const data = await res.json();
+
       if (!res.ok) {
-        alert("Login failed");
+        alert(data.msg || "Login failed");
         return;
       }
-
-      const data = await res.json();
 
       if (data.token) {
         // ✅ store token
         localStorage.setItem("token", data.token);
 
-        // ✅ store REAL user from backend
+        // ✅ store user
         localStorage.setItem("user", JSON.stringify(data.user));
 
         navigate("/dashboard");
       } else {
-        alert(data.msg || "Invalid credentials");
+        alert("Invalid credentials");
       }
 
     } catch (err) {
-      console.error(err);
-      alert("Server error");
+      console.error("Login error:", err);
+      alert("Server not reachable 🚨");
     }
   };
 
@@ -92,6 +93,7 @@ export default function Login() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
 
           {/* PASSWORD */}
@@ -101,6 +103,7 @@ export default function Login() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
 
           {/* BUTTON */}

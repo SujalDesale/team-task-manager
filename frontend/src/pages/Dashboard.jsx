@@ -12,81 +12,52 @@ import {
   Users,
 } from "lucide-react";
 
+import { apiFetch } from "../services/api"; // ✅ IMPORTANT
+
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // ✅ STATE
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ USER
   const user = JSON.parse(localStorage.getItem("user"));
 
-
-  // ✅ FETCH ALL DATA
   const fetchData = async () => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      navigate("/");
-      return;
+      if (!token) {
+        navigate("/");
+        return;
+      }
+
+      // ✅ PARALLEL FETCH (faster + cleaner)
+      const [taskData, projectData, userData] = await Promise.all([
+        apiFetch("/tasks"),
+        apiFetch("/projects"),
+        apiFetch("/users"),
+      ]);
+
+      setTasks(Array.isArray(taskData) ? taskData : []);
+      setProjects(Array.isArray(projectData) ? projectData : []);
+      setUsers(Array.isArray(userData) ? userData : []);
+
+    } catch (error) {
+      console.error("Dashboard error:", error);
+      setTasks([]);
+      setProjects([]);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // ================= TASKS =================
-    const taskRes = await fetch("http://localhost:5000/tasks", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    let taskData = [];
-    if (taskRes.ok) {
-      const data = await taskRes.json();
-      if (Array.isArray(data)) taskData = data;
-    }
-    setTasks(taskData);
-
-    // ================= PROJECTS =================
-    const projectRes = await fetch("http://localhost:5000/projects", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    let projectData = [];
-    if (projectRes.ok) {
-      const data = await projectRes.json();
-      if (Array.isArray(data)) projectData = data;
-    }
-    setProjects(projectData);
-
-    // ================= USERS (FIXED) =================
-    const userRes = await fetch("http://localhost:5000/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    let userData = [];
-    if (userRes.ok) {
-      const data = await userRes.json();
-      if (Array.isArray(data)) userData = data;
-    }
-    setUsers(userData);
-
-  } catch (error) {
-    console.error("Dashboard error:", error);
-    setTasks([]);
-    setProjects([]);
-    setUsers([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // ✅ LOAD
   useEffect(() => {
     fetchData();
   }, []);
 
-  // 🌀 LOADING SCREEN
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-500">
@@ -98,13 +69,10 @@ export default function Dashboard() {
   return (
     <div className="flex bg-[#f8f9fb] min-h-screen font-serif">
 
-      {/* SIDEBAR */}
       <Sidebar />
 
-      {/* MAIN */}
       <div className="flex-1 px-8 py-6">
 
-        {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-800">
             Welcome back, {user?.name || "User"}
@@ -116,7 +84,6 @@ export default function Dashboard() {
 
         <div className="border-b border-gray-200 mb-6"></div>
 
-        {/* STATS */}
         <div className="grid grid-cols-3 gap-5 mb-8">
 
           <StatCard
@@ -163,7 +130,6 @@ export default function Dashboard() {
 
         </div>
 
-        {/* TASKS */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-800">
             Recent tasks
