@@ -16,12 +16,10 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://team-task-manager-3.vercel.app"
+    /vercel\.app$/
   ],
   credentials: true
 }));
-app.use(express.json());
-
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
