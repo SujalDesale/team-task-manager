@@ -12,13 +12,19 @@ export default function Signup() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/register", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, email, password }),
       });
+
+      // ✅ Handle invalid response
+      if (!res.ok) {
+        alert("Signup failed");
+        return;
+      }
 
       const data = await res.json();
 
@@ -28,9 +34,10 @@ export default function Signup() {
       } else {
         alert(data.msg || "Signup failed");
       }
+
     } catch (err) {
-      console.error(err);
-      alert("Server error");
+      console.error("Signup error:", err);
+      alert("Server not reachable 🚨");
     }
   };
 
@@ -60,6 +67,7 @@ export default function Signup() {
         <input
           className="w-full border rounded-lg p-3 mb-4"
           placeholder="Full name"
+          value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
@@ -67,6 +75,7 @@ export default function Signup() {
         <input
           className="w-full border rounded-lg p-3 mb-4"
           placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
@@ -75,6 +84,7 @@ export default function Signup() {
           className="w-full border rounded-lg p-3 mb-6"
           type="password"
           placeholder="Password (min 6 characters)"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
